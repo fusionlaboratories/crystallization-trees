@@ -14,6 +14,7 @@
 - `findMin`: Finds the wallet with the minimum amount in the tree.
 - `findMax`: Finds the wallet with the maximum amount in the tree.
 - `printTree`: Returns a string representation of the binary tree structure.
+- `search`: Find a wallet in the binary tree based on its UUID:
 
 ## Usage
 
@@ -24,8 +25,8 @@ Here is an example of how to use the BiTree module with multiple wallets and var
 ```haskell
 module Main where
 
-import BiTree (BinaryTree(..), Wallet(..), insert, delete, findMin, findMax, printTree)
-import Data.UUID (fromString)
+import BiTree (BinaryTree(..), Wallet(..), insert, delete, findMin, findMax, printTree, search)
+import Data.UUID (fromString, UUID)
 import Control.Monad (foldM)
 
 main :: IO ()
@@ -61,6 +62,14 @@ main = do
 
     putStrLn "Tree after deleting Alice:"
     putStrLn (printTree newTree 0)
+    putStrLn "Wallet 123e4567-e89b-12d3-a456-426614174000 found?:"
+    let walletUUID = fromString "123e4567-e89b-12d3-a456-426614174000" :: Maybe UUID
+    case walletUUID of
+        Just uuid -> do
+            let wallet = search uuid tree
+            print wallet
+        Nothing -> putStrLn "Invalid UUID"
+
 ```
 This example demonstrates inserting multiple wallets into a binary tree, printing the tree structure, finding the minimum and maximum wallets, and deleting a wallet from the tree.
 
