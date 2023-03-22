@@ -14,6 +14,7 @@
 - `findMin`: Finds the wallet with the minimum amount in the tree.
 - `findMax`: Finds the wallet with the maximum amount in the tree.
 - `printTree`: Returns a string representation of the binary tree structure.
+- `search`: Find a wallet in the binary tree based on its UUID:
 
 ## Usage
 
