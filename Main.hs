@@ -1,7 +1,7 @@
 module Main where
 
-import BiTree (BinaryTree(..), Wallet(..), insert, delete, findMin, findMax, printTree)
-import Data.UUID (fromString)
+import BiTree (BinaryTree(..), Wallet(..), insert, delete, findMin, findMax, printTree, search)
+import Data.UUID (fromString, UUID)
 import Control.Monad (foldM)
 
 main :: IO ()
@@ -37,3 +37,10 @@ main = do
 
     putStrLn "Tree after deleting Alice:"
     putStrLn (printTree newTree 0)
+    putStrLn "Wallet 123e4567-e89b-12d3-a456-426614174000 found?:"
+    let walletUUID = fromString "123e4567-e89b-12d3-a456-426614174000" :: Maybe UUID
+    case walletUUID of
+        Just uuid -> do
+            let wallet = search uuid tree
+            print wallet
+        Nothing -> putStrLn "Invalid UUID"

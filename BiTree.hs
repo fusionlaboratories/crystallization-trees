@@ -1,4 +1,4 @@
-module BiTree (BinaryTree(..), Wallet(..), insert, delete, findMin, findMax, printTree)
+module BiTree (BinaryTree(..), Wallet(..), insert, delete, findMin, findMax, printTree, search)
 where
 
 import Data.UUID (UUID)
