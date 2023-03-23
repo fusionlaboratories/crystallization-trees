@@ -1,46 +1,39 @@
 module Main where
 
-import BiTree (BinaryTree(..), Wallet(..), insert, delete, findMin, findMax, printTree, search)
-import Data.UUID (fromString, UUID)
-import Control.Monad (foldM)
+import BiTree
+import Control.Monad (forM_, forM)
+import System.Random (randomRIO)
 
 main :: IO ()
 main = do
-    let wallets = [ Wallet "Alice" 100
-                  , Wallet "Bob" 50
-                  , Wallet "Charlie" 200
-                  , Wallet "David" 25
-                  , Wallet "Eve" 300
-                  , Wallet "Frank" 150
-                  , Wallet "Grace" 75
-                  , Wallet "Hannah" 225
-                  , Wallet "Ivan" 175
-                  , Wallet "Jack" 125
-                  ]
-    
-    -- Insert wallets into the tree
-    tree <- foldM (flip insert) Empty wallets
-    
-    -- Print the tree
-    putStrLn (printTree tree 0)
-    
-    -- Find minimum and maximum wallets
-    putStrLn "Minimum:"
-    print (findMin tree)
-    
-    putStrLn "Maximum:"
-    print (findMax tree)
+    let walletNames = ["Alice", "Bob", "Charlie", "David", "Eve", "Frank", "Grace", "Heidi", "Ivan", "Judy"]
 
-    -- Delete a wallet from the tree
-    let Node uuid1 _ _ _ _ _ = tree
-    let newTree = delete uuid1 tree
+    wallets <- forM walletNames $ \name -> do
+        balance <- randomRIO (10, 1000) :: IO Double
+        return $ Wallet name balance
 
-    putStrLn "Tree after deleting Alice:"
-    putStrLn (printTree newTree 0)
-    putStrLn "Wallet 123e4567-e89b-12d3-a456-426614174000 found?:"
-    let walletUUID = fromString "123e4567-e89b-12d3-a456-426614174000" :: Maybe UUID
-    case walletUUID of
-        Just uuid -> do
-            let wallet = search uuid tree
-            print wallet
-        Nothing -> putStrLn "Invalid UUID"
+    tree <- foldl (>>=) (return Empty) (map insert wallets)
+
+    putStrLn "\nInitial tree:"
+    putStrLn $ printTree tree 0
+
+    -- Modify wallet balances
+    let modifiedTree = foldl (\tree (name, delta) -> maybe tree id (modify name delta tree)) tree [("Alice", 500), ("Bob", -200)]
+    putStrLn "\nTree after modifying wallet balances:"
+    putStrLn $ printTree modifiedTree 0
+
+    -- Search for wallets
+    putStrLn "\nSearching for wallets:"
+    forM_ walletNames $ \name -> do
+        putStrLn $ "Searching for " ++ name ++ ": " ++ show (search name modifiedTree)
+
+    -- Delete wallets
+    let deletedTree = foldl (\tree name -> delete name tree) modifiedTree ["Alice", "Bob"]
+    putStrLn "\nTree after deleting wallets:"
+    putStrLn $ printTree deletedTree 0
+
+    -- Find the minimum and maximum wallet balances
+    putStrLn "\nMinimum wallet balance:"
+    putStrLn $ show $ findMin deletedTree
+    putStrLn "\nMaximum wallet balance:"
+    putStrLn $ show $ findMax deletedTree
