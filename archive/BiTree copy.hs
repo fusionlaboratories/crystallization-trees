@@ -1,4 +1,4 @@
-module BiTree (BinaryTree(..), Wallet(..), insert, delete, findMin, findMax, printTree)
+module BiTree (BinaryTree(..), Wallet(..), insert, delete, findMin, findMax, printTree, search)
 where
 
 import Data.UUID (UUID)
@@ -56,20 +56,24 @@ balance tree@(Node tag wallet total _ left right)
 balance tree = tree
 
 insert :: Wallet -> BinaryTree -> IO BinaryTree
-insert (Wallet id amt) Empty = do
+insert wallet@(Wallet id amt) Empty = do
     tag <- nextRandom
-    return $ Node tag (Wallet id amt) amt 1 Empty Empty
-insert (Wallet id amt) (Node tag' (Wallet id' amt') total height left right) = do
-    if id == id'
-        then return $ Node tag' (Wallet id amt) total height left right
-        else if amt <= amt'
-            then do
-                newLeft <- insert (Wallet id amt) left
-                return $ balance $ Node tag' (Wallet id' amt') newTotal (height + 1) newLeft right
-            else do
-                newRight <- insert (Wallet id amt) right
-                return $ balance $ Node tag' (Wallet id' amt') newTotal (height + 1) left newRight
-    where newTotal = total + amt
+    return $ Node tag wallet amt 1 Empty Empty
+insert wallet@(Wallet id amt) (Node tag' (Wallet id' amt') total height left right) = do
+    if id == id' then
+        return $ Node tag' (Wallet id amt) (newTotal amt) height left right
+    else
+        if amt <= amt' then do
+            newLeft <- insert wallet left
+            let newTotal = total + amt
+            return $ balance $ Node tag' (Wallet id' amt') newTotal (height + 1) newLeft right
+        else do
+            newRight <- insert wallet right
+            let newTotal = total + amt
+            return $ balance $ Node tag' (Wallet id' amt') newTotal (height + 1) left newRight
+  where
+    newTotal newAmt = total + newAmt
+
 
 search :: UUID -> BinaryTree -> Maybe Wallet
 search _ Empty = Nothing
@@ -103,8 +107,9 @@ findMax (Node _ _ _ _ _ right) = findMax right
 
 printTree :: BinaryTree -> Int -> String
 printTree Empty _ = ""
-printTree (Node uuid (Wallet name amount) total height left right) level =
-  replicate (4 * level) ' ' ++
-  name ++ " (" ++ show amount ++ "): " ++ show uuid ++ "\n" ++
-  printTree left (level + 1) ++
-  printTree right (level + 1)
+printTree (Node uuid (Wallet name amt) total height left right) level =
+  printTree right (level + 1) ++
+  replicate level ' ' ++ "|--" ++
+  name ++ " (" ++ show amt ++ "): " ++ "UUID=" ++ show uuid ++ ", total=" ++ show total ++ ", height=" ++ show height ++ "\n" ++
+  printTree left (level + 1)
+

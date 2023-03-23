@@ -1,4 +1,4 @@
-module BiTree (BinaryTree(..), Wallet(..), insert, delete, findMin, findMax, printTree, search)
+module BiTree (BinaryTree(..), Wallet(..), insert, delete, findMin, findMax, printTree, search, modify)
 where
 
 import Data.UUID (UUID)
@@ -40,6 +40,7 @@ rotateLeft (Node tag1 wallet1 total1 _ left1 (Node tag2 wallet2 total2 _ left2 r
     updateHeight $ Node tag2 wallet2 total2 h2 (updateHeight $ Node tag1 wallet1 total1 h1 left1 left2) right2
     where h1 = height left1
           h2 = height right2
+rotateLeft node@(Node _ _ _ _ Empty _) = node
 
 rotateRight :: BinaryTree -> BinaryTree
 rotateRight Empty = Empty
@@ -47,6 +48,8 @@ rotateRight (Node tag1 wallet1 total1 _ (Node tag2 wallet2 total2 _ left2 right2
     updateHeight $ Node tag2 wallet2 total2 h2 left2 (updateHeight $ Node tag1 wallet1 total1 h1 right2 right1)
     where h1 = height right1
           h2 = height left2
+rotateRight node@(Node _ _ _ _ Empty _) = node
+
 
 balance :: BinaryTree -> BinaryTree
 balance tree@(Node tag wallet total _ left right)
@@ -74,25 +77,35 @@ insert wallet@(Wallet id amt) (Node tag' (Wallet id' amt') total height left rig
   where
     newTotal newAmt = total + newAmt
 
+modify :: String -> Double -> BinaryTree -> Maybe BinaryTree
+modify _ _ Empty = Nothing
+modify name delta node@(Node tag wallet@(Wallet walletName amt) total height left right)
+    | name == walletName = Just $ Node tag (Wallet walletName (amt + delta)) (total + delta) height left right
+    | name < walletName = fmap (\newLeft -> balance $ Node tag wallet newTotal height newLeft right) (modify name delta left)
+    | otherwise = fmap (\newRight -> balance $ Node tag wallet newTotal height left newRight) (modify name delta right)
+    where newTotal = total + delta
 
-search :: UUID -> BinaryTree -> Maybe Wallet
+
+search :: String -> BinaryTree -> Maybe Wallet
 search _ Empty = Nothing
-search tag (Node tag' wallet total _ left right)
-    | tag == tag' = Just wallet
-    | otherwise = search tag left <|> search tag right
+search name (Node _ wallet@(Wallet walletName _) _ _ left right)
+    | name == walletName = Just wallet
+    | name < walletName = search name left
+    | otherwise = search name right
 
-delete :: UUID -> BinaryTree -> BinaryTree
+delete :: String -> BinaryTree -> BinaryTree
 delete _ Empty = Empty
-delete tag (Node tag' wallet total height left right)
-    | tag == tag' = merge left right
-    | otherwise = balance $ Node tag' wallet newTotal (height - 1) (delete tag left) (delete tag right)
+delete name node@(Node tag wallet@(Wallet walletName _) total height left right)
+    | name == walletName = merge left right
+    | name < walletName = balance $ Node tag wallet newTotal (height - 1) (delete name left) right
+    | otherwise = balance $ Node tag wallet newTotal (height - 1) left (delete name right)
     where newTotal = total - getAmount wallet
           getAmount (Wallet _ amt) = amt
           merge Empty right = right
           merge left Empty = left
-          merge left right = let (minNode, minTag) = findMinNode right
-                             in Node minTag minNode newTotal (height - 1) left (delete minTag right)
-          findMinNode (Node tag' wallet _ _ Empty _) = (wallet, tag')
+          merge left right = let (minNode, minName) = findMinNode right
+                             in Node tag minNode newTotal (height - 1) left (delete minName right)
+          findMinNode (Node tag' wallet@(Wallet walletName _) _ _ Empty _) = (wallet, walletName)
           findMinNode (Node tag' wallet _ _ left _) = findMinNode left
 
 findMin :: BinaryTree -> Maybe Wallet
