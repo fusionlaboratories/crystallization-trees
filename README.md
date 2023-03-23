@@ -14,7 +14,8 @@
 - `findMin`: Finds the wallet with the minimum amount in the tree.
 - `findMax`: Finds the wallet with the maximum amount in the tree.
 - `printTree`: Returns a string representation of the binary tree structure.
-- `search`: Find a wallet in the binary tree based on its UUID:
+- `search`: Find a wallet in the binary tree based on its wallet name.
+- `modify`: Modifes a wallet balance in the binary tree based on its wallet name. 
 
 ## Usage
 
@@ -25,50 +26,43 @@ Here is an example of how to use the BiTree module with multiple wallets and var
 ```haskell
 module Main where
 
-import BiTree (BinaryTree(..), Wallet(..), insert, delete, findMin, findMax, printTree, search)
-import Data.UUID (fromString, UUID)
-import Control.Monad (foldM)
+import BiTree
+import Control.Monad (forM_, forM)
+import System.Random (randomRIO)
 
 main :: IO ()
 main = do
-    let wallets = [ Wallet "Alice" 100
-                  , Wallet "Bob" 50
-                  , Wallet "Charlie" 200
-                  , Wallet "David" 25
-                  , Wallet "Eve" 300
-                  , Wallet "Frank" 150
-                  , Wallet "Grace" 75
-                  , Wallet "Hannah" 225
-                  , Wallet "Ivan" 175
-                  , Wallet "Jack" 125
-                  ]
-    
-    -- Insert wallets into the tree
-    tree <- foldM (flip insert) Empty wallets
-    
-    -- Print the tree
-    putStrLn (printTree tree 0)
-    
-    -- Find minimum and maximum wallets
-    putStrLn "Minimum:"
-    print (findMin tree)
-    
-    putStrLn "Maximum:"
-    print (findMax tree)
+    let walletNames = ["Alice", "Bob", "Charlie", "David", "Eve", "Frank", "Grace", "Heidi", "Ivan", "Judy"]
 
-    -- Delete a wallet from the tree
-    let Node uuid1 _ _ _ _ _ = tree
-    let newTree = delete uuid1 tree
+    wallets <- forM walletNames $ \name -> do
+        balance <- randomRIO (10, 1000) :: IO Double
+        return $ Wallet name balance
 
-    putStrLn "Tree after deleting Alice:"
-    putStrLn (printTree newTree 0)
-    putStrLn "Wallet 123e4567-e89b-12d3-a456-426614174000 found?:"
-    let walletUUID = fromString "123e4567-e89b-12d3-a456-426614174000" :: Maybe UUID
-    case walletUUID of
-        Just uuid -> do
-            let wallet = search uuid tree
-            print wallet
-        Nothing -> putStrLn "Invalid UUID"
+    tree <- foldl (>>=) (return Empty) (map insert wallets)
+
+    putStrLn "\nInitial tree:"
+    putStrLn $ printTree tree 0
+
+    -- Modify wallet balances
+    let modifiedTree = foldl (\tree (name, delta) -> maybe tree id (modify name delta tree)) tree [("Alice", 500), ("Bob", -200)]
+    putStrLn "\nTree after modifying wallet balances:"
+    putStrLn $ printTree modifiedTree 0
+
+    -- Search for wallets
+    putStrLn "\nSearching for wallets:"
+    forM_ walletNames $ \name -> do
+        putStrLn $ "Searching for " ++ name ++ ": " ++ show (search name modifiedTree)
+
+    -- Delete wallets
+    let deletedTree = foldl (\tree name -> delete name tree) modifiedTree ["Alice", "Bob"]
+    putStrLn "\nTree after deleting wallets:"
+    putStrLn $ printTree deletedTree 0
+
+    -- Find the minimum and maximum wallet balances
+    putStrLn "\nMinimum wallet balance:"
+    putStrLn $ show $ findMin deletedTree
+    putStrLn "\nMaximum wallet balance:"
+    putStrLn $ show $ findMax deletedTree
 
 ```
 This example demonstrates inserting multiple wallets into a binary tree, printing the tree structure, finding the minimum and maximum wallets, and deleting a wallet from the tree.
@@ -101,31 +95,63 @@ To run the provided Haskell script, follow these steps:
 This will execute the script and display the output in the terminal.
 The example output would be for example: 
 ```
-  |--Eve (300.0): UUID=f42a4d5d-b14a-484a-a39f-529cdc09d03e, total=525.0, height=2
-   |--Hannah (225.0): UUID=d3c1403c-6544-4886-9117-464c6fff85b6, total=225.0, height=1
- |--Charlie (200.0): UUID=d216a440-ea23-4cd9-bf62-19fb108b7866, total=1175.0, height=4
-   |--Ivan (175.0): UUID=261283ff-6476-4bef-b27a-ff62a56f9a59, total=175.0, height=1
-  |--Frank (150.0): UUID=b3cc2f2c-6057-4cdf-991e-0024f10e5cd3, total=450.0, height=3
-   |--Jack (125.0): UUID=7724d86a-702d-42ac-8855-c231b3ea19a5, total=125.0, height=1
-|--Alice (100.0): UUID=359b77b8-d33f-49b5-a837-aeac3d6c362f, total=1425.0, height=5
-  |--Grace (75.0): UUID=0237afc6-9db2-4d9f-afe1-43e1c71a53e2, total=75.0, height=1
- |--Bob (50.0): UUID=2df632b7-5626-48cc-a38e-d7198081197d, total=150.0, height=3
-  |--David (25.0): UUID=ff8f4bf2-64f5-481b-a772-1d13e88da0c3, total=25.0, height=1
 
-Minimum:
-Just (Wallet "David" 25.0)
-Maximum:
-Just (Wallet "Eve" 300.0)
-Tree after deleting Alice:
-  |--Eve (300.0): UUID=f42a4d5d-b14a-484a-a39f-529cdc09d03e, total=225.0, height=1
-   |--Hannah (225.0): UUID=d3c1403c-6544-4886-9117-464c6fff85b6, total=0.0, height=0
- |--Charlie (200.0): UUID=d216a440-ea23-4cd9-bf62-19fb108b7866, total=975.0, height=3
-   |--Ivan (175.0): UUID=261283ff-6476-4bef-b27a-ff62a56f9a59, total=0.0, height=0
-  |--Frank (150.0): UUID=b3cc2f2c-6057-4cdf-991e-0024f10e5cd3, total=300.0, height=2
-|--Jack (125.0): UUID=7724d86a-702d-42ac-8855-c231b3ea19a5, total=1325.0, height=4
-  |--Grace (75.0): UUID=0237afc6-9db2-4d9f-afe1-43e1c71a53e2, total=75.0, height=1
- |--Bob (50.0): UUID=2df632b7-5626-48cc-a38e-d7198081197d, total=150.0, height=3
-  |--David (25.0): UUID=ff8f4bf2-64f5-481b-a772-1d13e88da0c3, total=25.0, height=1
+Initial tree:
+   |--Charlie (929.0004377744215): UUID=d7d363da-fca8-4852-8b9b-23726f242a1b, total=2378.87883931578, height=1
+  |--Eve (733.5693870361089): UUID=af3ae3ed-85e3-4cdb-9ada-43acc0e0bb92, total=1449.878401541359, height=2
+   |--Ivan (716.3090145052499): UUID=5eeeb6af-5789-4a74-aa55-9340221105ae, total=716.3090145052499, height=1
+ |--Bob (671.4448665589598): UUID=9870abee-8adc-49b4-b47c-afa8baf9387e, total=4381.494763194179, height=3
+  |--David (534.4014208649751): UUID=a65a2319-73c3-4412-aea7-dd0ff3f9bc88, total=534.4014208649751, height=1
+|--Alice (475.12769692710583): UUID=9bf55c47-4d20-4fe0-a879-7262f0dfa763, total=4519.134529772229, height=4
+   |--Judy (456.1029677312726): UUID=b0c2c1ba-f5bd-43c7-bb7a-ac9aa7080fb3, total=456.1029677312726, height=1
+  |--Heidi (396.0814566870539): UUID=428e826d-0eab-40bd-924f-1c67e24fe4b9, total=852.1844244183264, height=2
+ |--Grace (210.8711397737899): UUID=2d74f3d5-f884-41ad-9fd4-9c3c9c0503be, total=1063.0555641921164, height=3
+  |--Frank (129.79552894940048): UUID=90683f0f-3d33-4ab7-9d2e-8475f7642c18, total=736.7481254102443, height=1
+
+
+Tree after modifying wallet balances:
+   |--Charlie (929.0004377744215): UUID=d7d363da-fca8-4852-8b9b-23726f242a1b, total=2378.87883931578, height=1
+  |--Eve (733.5693870361089): UUID=af3ae3ed-85e3-4cdb-9ada-43acc0e0bb92, total=1449.878401541359, height=2
+   |--Ivan (716.3090145052499): UUID=5eeeb6af-5789-4a74-aa55-9340221105ae, total=716.3090145052499, height=1
+ |--Bob (471.4448665589598): UUID=9870abee-8adc-49b4-b47c-afa8baf9387e, total=4181.494763194179, height=3
+  |--David (534.4014208649751): UUID=a65a2319-73c3-4412-aea7-dd0ff3f9bc88, total=534.4014208649751, height=1
+|--Alice (975.1276969271058): UUID=9bf55c47-4d20-4fe0-a879-7262f0dfa763, total=4819.134529772229, height=4
+   |--Judy (456.1029677312726): UUID=b0c2c1ba-f5bd-43c7-bb7a-ac9aa7080fb3, total=456.1029677312726, height=1
+  |--Heidi (396.0814566870539): UUID=428e826d-0eab-40bd-924f-1c67e24fe4b9, total=852.1844244183264, height=2
+ |--Grace (210.8711397737899): UUID=2d74f3d5-f884-41ad-9fd4-9c3c9c0503be, total=1063.0555641921164, height=3
+  |--Frank (129.79552894940048): UUID=90683f0f-3d33-4ab7-9d2e-8475f7642c18, total=736.7481254102443, height=1
+
+
+Searching for wallets:
+Searching for Alice: Just (Wallet "Alice" 975.1276969271058)
+Searching for Bob: Just (Wallet "Bob" 471.4448665589598)
+Searching for Charlie: Nothing
+Searching for David: Nothing
+Searching for Eve: Just (Wallet "Eve" 733.5693870361089)
+Searching for Frank: Nothing
+Searching for Grace: Nothing
+Searching for Heidi: Nothing
+Searching for Ivan: Nothing
+Searching for Judy: Nothing
+
+Tree after deleting wallets:
+   |--Charlie (929.0004377744215): UUID=d7d363da-fca8-4852-8b9b-23726f242a1b, total=2378.87883931578, height=1
+  |--Eve (733.5693870361089): UUID=af3ae3ed-85e3-4cdb-9ada-43acc0e0bb92, total=716.30901450525, height=1
+   |--Ivan (716.3090145052499): UUID=5eeeb6af-5789-4a74-aa55-9340221105ae, total=0.0, height=0
+ |--Bob (471.4448665589598): UUID=9870abee-8adc-49b4-b47c-afa8baf9387e, total=3710.049896635219, height=2
+  |--David (534.4014208649751): UUID=a65a2319-73c3-4412-aea7-dd0ff3f9bc88, total=534.4014208649751, height=1
+|--David (534.4014208649751): UUID=9bf55c47-4d20-4fe0-a879-7262f0dfa763, total=3309.6054119801483, height=2
+  |--Judy (456.1029677312726): UUID=b0c2c1ba-f5bd-43c7-bb7a-ac9aa7080fb3, total=456.1029677312726, height=1
+ |--Heidi (396.0814566870539): UUID=428e826d-0eab-40bd-924f-1c67e24fe4b9, total=852.1844244183264, height=2
+  |--Grace (210.8711397737899): UUID=2d74f3d5-f884-41ad-9fd4-9c3c9c0503be, total=852.1844244183266, height=1
+   |--Frank (129.79552894940048): UUID=90683f0f-3d33-4ab7-9d2e-8475f7642c18, total=606.9525964608438, height=0
+
+
+Minimum wallet balance:
+Just (Wallet "Frank" 129.79552894940048)
+
+Maximum wallet balance:
+Just (Wallet "Charlie" 929.0004377744215)
 ```
 Visuallly represetned it would look like this 
 ```mermaid
