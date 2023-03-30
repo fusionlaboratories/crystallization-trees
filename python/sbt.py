@@ -86,27 +86,37 @@ class SelfBalancingBinaryTree:
             return 0
         return node.balance + self.sum_balance_to_root(node.left) + self.sum_balance_to_root(node.right)
     
+
+class AVLSumNode(Node):
+    def __init__(self, balance, utxo):
+        super().__init__(balance, utxo)
+        self.subtree_sum = balance
+
 class AVLSumTree(SelfBalancingBinaryTree):
     def __init__(self):
         super().__init__()
-        self.total_sum = 0
+
+    def get_subtree_sum(self, node):
+        if node is None:
+            return 0
+        return node.subtree_sum
+
+    def update_subtree_sum(self, node):
+        if node is None:
+            return
+        node.subtree_sum = node.balance + self.get_subtree_sum(node.left) + self.get_subtree_sum(node.right)
 
     def insert(self, balance, utxo):
         super().insert(balance, utxo)
-        self.total_sum += balance
 
     def delete(self, balance, utxo):
         node = self._search(self.root, balance, utxo)
         if node:
-            self.total_sum -= balance
             self.root = self._delete(self.root, balance, utxo)
 
     def modify(self, old_balance, new_balance, utxo):
         self.delete(old_balance, utxo)
         self.insert(new_balance, utxo)
-
-    def get_total_sum(self):
-        return self.total_sum
 
     def _search(self, node, balance, utxo):
         if node is None:
