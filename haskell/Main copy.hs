@@ -29,7 +29,7 @@ main = do
 
     -- Delete wallets
     let deletedTree = foldl (\tree name -> delete name tree) modifiedTree ["Alice", "Bob"]
-    putStrLn "\nTree after deleting wallets:"
+    putStrLn "\nTree after deleting wallets of Alice and Bob:"
     putStrLn $ printTree deletedTree 0
 
     -- Find the minimum and maximum wallet balances
